@@ -813,28 +813,7 @@ if "Chat" in page:
                         st.dataframe(df, use_container_width=True, height=180)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    inject = st.session_state.pop("_inject", None)
-
-    with st.form("chat_form", clear_on_submit=True):
-        cols = st.columns([6, 1])
-        with cols[0]:
-            user_input = st.text_input(
-                "message",
-                value=inject or "",
-                placeholder="e.g. What was Prologis revenue in 2023?",
-                label_visibility="collapsed",
-            )
-        with cols[1]:
-            submitted = st.form_submit_button("Send ➤", use_container_width=True, type="primary")
-
-    col_a, col_b = st.columns([1, 6])
-    with col_a:
-        if st.button("🗑️ Clear", use_container_width=True):
-            st.session_state.messages = []
-            st.rerun()
-
-    # Demo Readiness section (shown only on landing / empty chat)
+    # ── Demo Readiness (only when chat is empty) ──────────────────────────────
     if not st.session_state.messages:
         st.markdown('<div class="section-title" style="margin-top:32px;">Demo Readiness</div>', unsafe_allow_html=True)
         readiness_items = [
@@ -860,12 +839,24 @@ if "Chat" in page:
         ri_html += "</div>"
         st.markdown(ri_html, unsafe_allow_html=True)
 
-    if submitted and user_input.strip():
-        st.session_state.messages.append({"role": "user", "content": user_input})
+    if st.session_state.messages:
+        if st.button("🗑️ Clear chat", key="clear_chat_btn"):
+            st.session_state.messages = []
+            st.rerun()
+
+    # ── Chat input (sticky at bottom, Enter to send) ───────────────────────────
+    user_input = st.chat_input("Ask about Prologis revenue, properties, filings, or news…")
+
+    # Accept either typed input or a quick-question inject from sidebar/buttons
+    question = user_input or st.session_state.pop("_inject", None)
+
+    if question and str(question).strip():
+        q = str(question).strip()
+        st.session_state.messages.append({"role": "user", "content": q})
         with st.spinner("Thinking…"):
             try:
                 from app.chatbot_router import handle_question
-                result = handle_question(user_input, use_sagemaker=st.session_state.use_sagemaker)
+                result = handle_question(q, use_sagemaker=st.session_state.use_sagemaker)
                 assistant_msg = {
                     "role": "assistant",
                     "content": result["answer"],
@@ -878,8 +869,7 @@ if "Chat" in page:
                 assistant_msg = {
                     "role": "assistant",
                     "content": (
-                        f"⚠️ I hit an error processing your question: `{_chat_err}`\n\n"
-                        "This demo uses a rule-based fallback when cloud AI is unavailable. "
+                        f"⚠️ I hit an error: `{_chat_err}`\n\n"
                         "Try asking about **Prologis revenue**, **industrial properties in Chicago**, or **recent acquisitions**."
                     ),
                     "source": "Error handler",

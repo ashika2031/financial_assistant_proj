@@ -61,17 +61,14 @@ html, body, [class*="css"] {
 section[data-testid="stSidebar"] {
   background: linear-gradient(180deg, #0D1B2E 0%, #0F172A 100%) !important;
   border-right: 1px solid var(--border) !important;
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+}
+section[data-testid="stSidebar"] > div:first-child {
+  padding: 0.75rem 0.75rem !important;
 }
 section[data-testid="stSidebar"] * { color: var(--text) !important; }
-section[data-testid="stSidebar"] .stRadio label {
-  padding: 8px 12px !important;
-  border-radius: 8px !important;
-  transition: background 0.2s;
-  cursor: pointer !important;
-}
-section[data-testid="stSidebar"] .stRadio label:hover {
-  background: rgba(37,99,235,0.15) !important;
-}
 
 /* ── Hide default header decorations ── */
 #MainMenu, footer, header { visibility: hidden; }
@@ -514,22 +511,33 @@ section[data-testid="stSidebar"] .stButton > button {
   border: none !important;
   border-radius: 8px !important;
   color: #94A3B8 !important;
-  font-size: 0.88em !important;
+  font-size: 14px !important;
   font-weight: 500 !important;
   text-align: left !important;
-  padding: 8px 12px !important;
+  padding: 7px 12px !important;
+  margin: 2px 0 !important;
+  min-height: unset !important;
+  height: auto !important;
+  line-height: 1.35 !important;
   width: 100% !important;
-  transition: background 0.18s, color 0.18s !important;
+  transition: background 0.15s, color 0.15s !important;
 }
 section[data-testid="stSidebar"] .stButton > button:hover {
-  background: rgba(37,99,235,0.15) !important;
-  color: #E2E8F0 !important;
+  background: rgba(37,99,235,0.13) !important;
+  color: #CBD5E1 !important;
 }
 section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-  background: rgba(37,99,235,0.22) !important;
+  background: rgba(37,99,235,0.18) !important;
   color: #60A5FA !important;
   font-weight: 700 !important;
-  border-left: 3px solid #2563EB !important;
+  border-left: 3px solid #38bdf8 !important;
+  padding-left: 10px !important;
+}
+/* shrink the stButton wrapper gap */
+section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"],
+section[data-testid="stSidebar"] .element-container {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -640,13 +648,13 @@ _NAV_PAGES = [
 
 with st.sidebar:
     st.markdown("""
-    <div style="text-align:center;padding:20px 0 12px 0">
-      <div style="font-size:2.2em">🏭</div>
-      <div style="font-size:1.1em;font-weight:800;background:linear-gradient(135deg,#60A5FA,#06B6D4);
+    <div style="text-align:center;padding:14px 0 8px 0">
+      <div style="font-size:1.7em;line-height:1">🏭</div>
+      <div style="font-size:19px;font-weight:800;margin-top:4px;background:linear-gradient(135deg,#60A5FA,#06B6D4);
         -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
         Prologis AI
       </div>
-      <div style="font-size:0.72em;color:#64748B;margin-top:2px;">Financial Intelligence Platform</div>
+      <div style="font-size:11px;color:#64748B;margin-top:2px;letter-spacing:0.04em;">Financial Intelligence Platform</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1684,16 +1692,54 @@ elif page == "Cloud Services":
 
     st.markdown('<div class="section-title">Endpoint Status</div>', unsafe_allow_html=True)
     from app.config import GCP_PROJECT, AWS_REGION, REGRESSION_ENDPOINT, CLASSIFICATION_ENDPOINT, BEDROCK_MODEL_ID
+
+    _aws_key      = bool(os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY"))
+    _sm_reg_ep    = os.getenv("REGRESSION_ENDPOINT_NAME", "")
+    _sm_cls_ep    = os.getenv("CLASSIFICATION_ENDPOINT_NAME", "")
+    _sagemaker_on = _aws_key and bool(_sm_reg_ep) and bool(_sm_cls_ep)
+    _gcp_on       = bool(GCP_PROJECT)
+    _bedrock_on   = _aws_key
+
+    # (label, status_text, color, detail)
     status_rows = [
-        ("Amazon SageMaker",  bool(os.getenv("AWS_ACCESS_KEY_ID")), f"Region: {AWS_REGION}"),
-        ("AWS Bedrock",       bool(os.getenv("AWS_ACCESS_KEY_ID")), f"Model: {BEDROCK_MODEL_ID}"),
-        ("Google Vertex AI",  bool(GCP_PROJECT),                    f"Project: {GCP_PROJECT or 'not set'}"),
-        ("Regression EP",     bool(REGRESSION_ENDPOINT),            REGRESSION_ENDPOINT),
-        ("Classification EP", bool(CLASSIFICATION_ENDPOINT),        CLASSIFICATION_ENDPOINT),
+        ("Amazon SageMaker",
+         "✅ Configured" if _sagemaker_on else "❌ Not Configured",
+         "#10B981" if _sagemaker_on else "#EF4444",
+         f"Region: {AWS_REGION}" if _sagemaker_on else "Set AWS credentials + endpoint names to enable"),
+        ("Local ML Fallback",
+         "⚡ Active" if not _sagemaker_on else "⏸ Standby (SageMaker in use)",
+         "#F59E0B" if not _sagemaker_on else "#64748B",
+         "scikit-learn models running locally"),
+        ("Regression Model",
+         "☁️ SageMaker" if (_sagemaker_on and _sm_reg_ep) else "💻 Local Fallback Active",
+         "#10B981" if (_sagemaker_on and _sm_reg_ep) else "#F59E0B",
+         _sm_reg_ep if (_sagemaker_on and _sm_reg_ep) else "Random Forest — models/random_forest_regressor.pkl"),
+        ("Classification Model",
+         "☁️ SageMaker" if (_sagemaker_on and _sm_cls_ep) else "💻 Local Fallback Active",
+         "#10B981" if (_sagemaker_on and _sm_cls_ep) else "#F59E0B",
+         _sm_cls_ep if (_sagemaker_on and _sm_cls_ep) else "Logistic Regression — models/logistic_regression_classifier.pkl"),
+        ("AWS Bedrock (Claude)",
+         "✅ Configured" if _bedrock_on else "❌ Not Configured",
+         "#10B981" if _bedrock_on else "#EF4444",
+         f"Model: {BEDROCK_MODEL_ID}" if _bedrock_on else "Set AWS credentials to enable"),
+        ("Google Vertex AI",
+         "✅ Configured" if _gcp_on else "❌ Not Configured",
+         "#10B981" if _gcp_on else "#EF4444",
+         f"Project: {GCP_PROJECT}" if _gcp_on else "Set GOOGLE_CLOUD_PROJECT to enable"),
     ]
-    for svc, active, detail in status_rows:
-        color  = "#10B981" if active else "#EF4444"
-        status = "✅ Configured" if active else "❌ Not configured"
+
+    if not _sagemaker_on:
+        st.markdown(
+            '<div style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.28);'
+            'border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.82em;color:#CBD5E1;line-height:1.5;">'
+            '<span style="color:#F59E0B;font-weight:700;">ℹ️ Demo mode:</span> '
+            'The deployed demo runs with local scikit-learn fallback models. '
+            'SageMaker endpoints can be enabled by adding AWS credentials and endpoint names as environment variables.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+    for svc, status, color, detail in status_rows:
         st.markdown(
             f'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;'
             f'padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'

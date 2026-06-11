@@ -5,7 +5,7 @@ pandas==2.2.2
 numpy==1.26.4
 plotly==5.22.0
 
-# Database
+# Database (optional — app falls back to CSV if not available)
 psycopg2-binary==2.9.9
 sqlalchemy==2.0.30
 
@@ -13,14 +13,8 @@ sqlalchemy==2.0.30
 scikit-learn==1.5.0
 joblib==1.4.2
 
-# AWS / SageMaker
+# AWS (lightweight client only — SageMaker SDK omitted to keep build fast)
 boto3==1.34.131
-sagemaker==2.220.0
-
-# GCP / Vertex AI
-google-cloud-aiplatform==1.57.0
-vertexai==1.57.0
-google-adk==0.3.0
 
 # SEC EDGAR
 requests==2.32.3
@@ -28,9 +22,8 @@ beautifulsoup4==4.12.3
 lxml==5.2.2
 sec-edgar-downloader==5.0.2
 
-# Generative AI extras
+# Generative AI
 anthropic==0.30.0
-openai==1.35.0
 
 # Utilities
 python-dateutil==2.9.0

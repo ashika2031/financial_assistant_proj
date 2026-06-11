@@ -570,6 +570,45 @@ h1,h2,h3,h4 { color: var(--text) !important; }
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* ── Quick Questions card buttons (inside st.container → stVerticalBlockBorderWrapper) ── */
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button[kind="secondary"] {
+  background: rgba(30,41,59,0.85) !important;
+  border: 1px solid rgba(148,163,184,0.18) !important;
+  border-radius: 10px !important;
+  color: #e5e7eb !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 8px 10px !important;
+  margin: 3px 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  line-height: 1.35 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  transition: background 0.14s, border-color 0.14s, color 0.14s !important;
+}
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button[kind="secondary"]:hover {
+  background: rgba(59,130,246,0.18) !important;
+  border-color: rgba(56,189,248,0.45) !important;
+  color: #ffffff !important;
+}
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button p {
+  font-size: 12.5px !important;
+  line-height: 1.35 !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+/* Remove the border-wrapper's own border/shadow so it's invisible */
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -702,18 +741,24 @@ with st.sidebar:
                 st.session_state.page = _name
                 st.rerun()
 
-    st.markdown('<div style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.09em;margin:10px 0 4px 2px;">Quick Questions</div>', unsafe_allow_html=True)
-    for q in [
-        "What was the net income last quarter?",
-        "Show industrial properties in Chicago",
-        "Any recent acquisitions?",
-        "Q4 2023 earnings results",
-        "Predict subscription probability",
-    ]:
-        if st.button(q, key=f"sb_{q[:18]}", use_container_width=True):
-            st.session_state.page = "Chat Assistant"
-            st.session_state._inject = q
-            st.rerun()
+    with st.container():
+        st.markdown(
+            '<div style="font-size:10px;font-weight:700;color:#475569;'
+            'text-transform:uppercase;letter-spacing:0.08em;margin:1rem 0 4px 2px;">'
+            'Quick Questions</div>',
+            unsafe_allow_html=True,
+        )
+        for q in [
+            "What was the net income last quarter?",
+            "Show industrial properties in Chicago",
+            "Any recent acquisitions?",
+            "Q4 2023 earnings results",
+            "Predict subscription probability",
+        ]:
+            if st.button(q, key=f"sb_{q[:18]}", use_container_width=True):
+                st.session_state.page = "Chat Assistant"
+                st.session_state._inject = q
+                st.rerun()
 
     st.markdown(
         '<div style="font-size:10px;color:#334155;text-align:center;line-height:1.6;margin-top:10px;">'

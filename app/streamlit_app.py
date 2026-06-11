@@ -1283,20 +1283,21 @@ elif "ML" in page:
                 from inference.regression_inference import predict as reg_predict
                 try:
                     r = reg_predict(reg_features, use_sagemaker=st.session_state.use_sagemaker)
-                    st.session_state.reg_result = {"r": r, "lat": latitude, "lon": longitude}
+                    st.session_state.reg_result = {"r": r}
                 except FileNotFoundError:
                     st.session_state.reg_result = {"error": "Model not found. Run `python models/train_regression.py` first."}
                 except Exception as e:
                     st.session_state.reg_result = {"error": str(e)}
 
-        if st.session_state.reg_result:
-            rr = st.session_state.reg_result
-            if "error" in rr:
-                st.error(rr["error"])
-            else:
-                r = rr["r"]
-                col_res, col_map = st.columns(2)
-                with col_res:
+        # Result card + live map (map always shows current slider lat/lon)
+        col_res, col_map = st.columns(2)
+        with col_res:
+            if st.session_state.reg_result:
+                rr = st.session_state.reg_result
+                if "error" in rr:
+                    st.error(rr["error"])
+                else:
+                    r = rr["r"]
                     st.markdown(f"""
                     <div class="result-card neutral">
                       <div class="result-card-icon">🏠</div>
@@ -1307,17 +1308,27 @@ elif "ML" in page:
                         Source: {'☁️ SageMaker' if r.get('source')=='sagemaker' else '💻 Local Model'}
                       </div>
                     </div>""", unsafe_allow_html=True)
-                with col_map:
-                    fig_map = px.scatter_geo(
-                        pd.DataFrame([{"lat": rr["lat"], "lon": rr["lon"], "val": r["predicted_value_usd"]}]),
-                        lat="lat", lon="lon", size="val", size_max=30,
-                        scope="usa", title="Property Location",
-                        color_discrete_sequence=["#2563EB"],
-                    )
-                    fig_map.update_layout(**plotly_dark_theme(), height=260, title_font_size=12, margin=dict(l=0,r=0,t=30,b=0))
-                    st.plotly_chart(fig_map, use_container_width=True)
-                if "fallback_reason" in r:
-                    st.warning(f"SageMaker unavailable — used local model. ({r['fallback_reason']})")
+                    if "fallback_reason" in r:
+                        st.warning(f"SageMaker unavailable — used local model. ({r['fallback_reason']})")
+            else:
+                st.markdown(
+                    '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;'
+                    'padding:28px;text-align:center;color:#475569;font-size:0.88em;">'
+                    '🏠 Adjust the sliders and click <strong>Predict Housing Value</strong> to see a result.'
+                    '</div>', unsafe_allow_html=True)
+        with col_map:
+            # Map always tracks current lat/lon from sliders
+            dot_size = st.session_state.reg_result["r"]["predicted_value_usd"] if (
+                st.session_state.reg_result and "r" in st.session_state.reg_result
+            ) else 300000
+            fig_map = px.scatter_geo(
+                pd.DataFrame([{"lat": latitude, "lon": longitude, "val": dot_size}]),
+                lat="lat", lon="lon", size="val", size_max=30,
+                scope="usa", title="Selected Location",
+                color_discrete_sequence=["#2563EB"],
+            )
+            fig_map.update_layout(**plotly_dark_theme(), height=260, title_font_size=12, margin=dict(l=0,r=0,t=30,b=0))
+            st.plotly_chart(fig_map, use_container_width=True)
 
     # ── Classification ───────────────────────────────────────────────────────
     with tab_cls:

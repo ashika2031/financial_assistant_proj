@@ -1725,7 +1725,7 @@ elif page == "Cloud Services":
     st.markdown("""
     <div class="hero-banner">
       <div class="hero-title">☁️ Cloud Services</div>
-      <div class="hero-sub">Amazon SageMaker · AWS Bedrock · Google Vertex AI — deployment-ready endpoints.</div>
+      <div class="hero-sub">Amazon SageMaker · AWS Bedrock · Google Vertex AI — cloud-ready integrations with local fallback.</div>
       <div class="hero-badge">🔌 Cloud-ready placeholders</div>
     </div>
     """, unsafe_allow_html=True)

@@ -1231,7 +1231,10 @@ elif "ML" in page:
               </div>
               <div style="font-size:0.83em;color:#94A3B8;line-height:1.7;">
                 Trained on the <strong style="color:#60A5FA">California Housing dataset</strong> (20,640 samples)
-                to predict the median house value for a California census block group.
+                to predict the median house value for a <strong style="color:#F59E0B">California</strong> census block group.
+                <br><br>
+                ⚠️ <strong style="color:#F59E0B">California only</strong> — the lat/lon sliders are bounded to CA coordinates.
+                Predictions outside California are not meaningful.
                 <br><br>
                 The model uses 100 decision trees with StandardScaler normalization.
               </div>
@@ -1317,15 +1320,25 @@ elif "ML" in page:
                     '🏠 Adjust the sliders and click <strong>Predict Housing Value</strong> to see a result.'
                     '</div>', unsafe_allow_html=True)
         with col_map:
-            # Map always tracks current lat/lon from sliders
+            st.markdown(
+                '<div style="font-size:0.72em;color:#F59E0B;font-weight:600;margin-bottom:4px;">'
+                '📍 California only — model trained on CA census block data (1990)</div>',
+                unsafe_allow_html=True)
             dot_size = st.session_state.reg_result["r"]["predicted_value_usd"] if (
                 st.session_state.reg_result and "r" in st.session_state.reg_result
             ) else 300000
             fig_map = px.scatter_geo(
                 pd.DataFrame([{"lat": latitude, "lon": longitude, "val": dot_size}]),
-                lat="lat", lon="lon", size="val", size_max=30,
-                scope="usa", title="Selected Location",
+                lat="lat", lon="lon", size="val", size_max=28,
+                title="Selected Location (California)",
                 color_discrete_sequence=["#2563EB"],
+            )
+            # Zoom into California
+            fig_map.update_geos(
+                visible=True, resolution=50,
+                showcountries=False, showsubunits=True, showcoastlines=True,
+                lataxis_range=[32.0, 42.5],
+                lonaxis_range=[-125.0, -113.5],
             )
             fig_map.update_layout(**plotly_dark_theme(), height=260, title_font_size=12, margin=dict(l=0,r=0,t=30,b=0))
             st.plotly_chart(fig_map, use_container_width=True)

@@ -572,7 +572,25 @@ h1,h2,h3,h4 { color: var(--text) !important; }
 }
 
 /* ── Quick Questions card buttons (inside st.container → stVerticalBlockBorderWrapper) ── */
-[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button[kind="secondary"] {
+/* Collapse the wrapper itself so it's invisible */
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+/* Flatten every inner wrapper so buttons align flush */
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"],
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] .element-container,
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  gap: 0 !important;
+}
+/* ALL buttons inside the QQ container — drop [kind] filter, it's unreliable */
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button {
   background: rgba(30,41,59,0.85) !important;
   border: 1px solid rgba(148,163,184,0.18) !important;
   border-radius: 10px !important;
@@ -588,9 +606,12 @@ h1,h2,h3,h4 { color: var(--text) !important; }
   line-height: 1.35 !important;
   height: auto !important;
   min-height: 0 !important;
+  width: 100% !important;
+  display: block !important;
+  box-sizing: border-box !important;
   transition: background 0.14s, border-color 0.14s, color 0.14s !important;
 }
-[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button[kind="secondary"]:hover {
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button:hover {
   background: rgba(59,130,246,0.18) !important;
   border-color: rgba(56,189,248,0.45) !important;
   color: #ffffff !important;
@@ -602,12 +623,7 @@ h1,h2,h3,h4 { color: var(--text) !important; }
   word-break: break-word !important;
   margin: 0 !important;
   padding: 0 !important;
-}
-/* Remove the border-wrapper's own border/shadow so it's invisible */
-[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
+  text-align: left !important;
 }
 </style>
 """, unsafe_allow_html=True)

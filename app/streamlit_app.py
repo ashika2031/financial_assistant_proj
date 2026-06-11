@@ -57,18 +57,44 @@ html, body, [class*="css"] {
 }
 .stApp { background: var(--bg-dark) !important; }
 
-/* ── Sidebar ── */
-section[data-testid="stSidebar"] {
+/* ── Sidebar shell ── */
+section[data-testid="stSidebar"],
+[data-testid="stSidebar"] {
   background: linear-gradient(180deg, #0D1B2E 0%, #0F172A 100%) !important;
   border-right: 1px solid var(--border) !important;
   width: 260px !important;
   min-width: 260px !important;
   max-width: 260px !important;
 }
-section[data-testid="stSidebar"] > div:first-child {
-  padding: 0.75rem 0.75rem !important;
+/* Kill the framework-injected top padding at every nesting level */
+[data-testid="stSidebar"] > div,
+[data-testid="stSidebar"] > div > div,
+[data-testid="stSidebarContent"] {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
-section[data-testid="stSidebar"] * { color: var(--text) !important; }
+[data-testid="stSidebarContent"] {
+  padding: 10px 10px 16px 10px !important;
+}
+/* Remove gap between every stVerticalBlock child (the main source of spacing) */
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+  gap: 0 !important;
+}
+/* Zero wrappers that add margin around each widget */
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stSidebar"] .element-container,
+[data-testid="stSidebar"] [data-testid="stButton"] {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+/* Divider tighter */
+[data-testid="stSidebar"] hr {
+  margin: 6px 0 !important;
+}
+/* Kill stSidebarNav injected header (multi-page artifact) */
+[data-testid="stSidebarNav"],
+[data-testid="stSidebarNavItems"] { display: none !important; }
+[data-testid="stSidebar"] * { color: var(--text) !important; }
 
 /* ── Hide default header decorations ── */
 #MainMenu, footer, header { visibility: hidden; }
@@ -505,8 +531,8 @@ h1,h2,h3,h4 { color: var(--text) !important; }
 .kpi-grid { align-items: stretch !important; }
 .kpi-card { box-sizing: border-box !important; }
 
-/* ── Sidebar nav buttons ── */
-section[data-testid="stSidebar"] .stButton > button {
+/* ── Sidebar nav buttons — target the actual <button> element ── */
+[data-testid="stSidebar"] button {
   background: transparent !important;
   border: none !important;
   border-radius: 8px !important;
@@ -516,28 +542,33 @@ section[data-testid="stSidebar"] .stButton > button {
   text-align: left !important;
   padding: 7px 12px !important;
   margin: 2px 0 !important;
-  min-height: unset !important;
+  min-height: 0 !important;
   height: auto !important;
-  line-height: 1.35 !important;
+  line-height: 1.3 !important;
   width: 100% !important;
-  transition: background 0.15s, color 0.15s !important;
+  display: block !important;
+  box-shadow: none !important;
+  transition: background 0.14s, color 0.14s !important;
 }
-section[data-testid="stSidebar"] .stButton > button:hover {
+[data-testid="stSidebar"] button:hover {
   background: rgba(37,99,235,0.13) !important;
   color: #CBD5E1 !important;
 }
-section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+/* Active page — Streamlit sets kind="primary" on the button element */
+[data-testid="stSidebar"] button[kind="primary"],
+[data-testid="stSidebar"] [data-testid="stBaseButton-primary"] {
   background: rgba(37,99,235,0.18) !important;
   color: #60A5FA !important;
   font-weight: 700 !important;
   border-left: 3px solid #38bdf8 !important;
-  padding-left: 10px !important;
+  padding-left: 9px !important;
 }
-/* shrink the stButton wrapper gap */
-section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"],
-section[data-testid="stSidebar"] .element-container {
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
+/* p tags inside buttons */
+[data-testid="stSidebar"] button p {
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -647,19 +678,17 @@ _NAV_PAGES = [
 ]
 
 with st.sidebar:
-    st.markdown("""
-    <div style="text-align:center;padding:14px 0 8px 0">
-      <div style="font-size:1.7em;line-height:1">🏭</div>
-      <div style="font-size:19px;font-weight:800;margin-top:4px;background:linear-gradient(135deg,#60A5FA,#06B6D4);
-        -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
-        Prologis AI
-      </div>
-      <div style="font-size:11px;color:#64748B;margin-top:2px;letter-spacing:0.04em;">Financial Intelligence Platform</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        '<div style="text-align:center;padding:4px 0 10px 0;border-bottom:1px solid rgba(99,130,191,0.15);margin-bottom:6px;">'
+        '<div style="font-size:28px;line-height:1;margin-bottom:3px;">🏭</div>'
+        '<div style="font-size:18px;font-weight:800;background:linear-gradient(135deg,#60A5FA,#06B6D4);'
+        '-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;">Prologis AI</div>'
+        '<div style="font-size:11px;color:#64748B;margin-top:2px;letter-spacing:0.04em;">Financial Intelligence Platform</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
-    st.divider()
-    st.markdown('<div style="font-size:0.72em;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;padding-left:4px;">Navigation</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.09em;margin:2px 0 4px 2px;">Menu</div>', unsafe_allow_html=True)
 
     for _icon, _name in _NAV_PAGES:
         _active = st.session_state.page == _name
@@ -673,8 +702,7 @@ with st.sidebar:
                 st.session_state.page = _name
                 st.rerun()
 
-    st.divider()
-    st.markdown('<div style="font-size:0.75em;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Quick Questions</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.09em;margin:10px 0 4px 2px;">Quick Questions</div>', unsafe_allow_html=True)
     for q in [
         "What was the net income last quarter?",
         "Show industrial properties in Chicago",
@@ -687,14 +715,15 @@ with st.sidebar:
             st.session_state._inject = q
             st.rerun()
 
-    st.divider()
-    st.markdown("""
-    <div style="font-size:0.68em;color:#334155;text-align:center;line-height:1.6;">
-      Powered by<br/>
-      <span style="color:#60A5FA">Vertex AI</span> ·
-      <span style="color:#F59E0B">AWS Bedrock</span> ·
-      <span style="color:#34D399">SageMaker</span>
-    </div>""", unsafe_allow_html=True)
+    st.markdown(
+        '<div style="font-size:10px;color:#334155;text-align:center;line-height:1.6;margin-top:10px;">'
+        'Powered by '
+        '<span style="color:#60A5FA">Vertex AI</span> · '
+        '<span style="color:#F59E0B">Bedrock</span> · '
+        '<span style="color:#34D399">SageMaker</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 # Derive page from session state (used by all page blocks below)
 page = st.session_state.page

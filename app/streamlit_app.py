@@ -507,6 +507,30 @@ h1,h2,h3,h4 { color: var(--text) !important; }
 /* ── Equal-height card rows ── */
 .kpi-grid { align-items: stretch !important; }
 .kpi-card { box-sizing: border-box !important; }
+
+/* ── Sidebar nav buttons ── */
+section[data-testid="stSidebar"] .stButton > button {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #94A3B8 !important;
+  font-size: 0.88em !important;
+  font-weight: 500 !important;
+  text-align: left !important;
+  padding: 8px 12px !important;
+  width: 100% !important;
+  transition: background 0.18s, color 0.18s !important;
+}
+section[data-testid="stSidebar"] .stButton > button:hover {
+  background: rgba(37,99,235,0.15) !important;
+  color: #E2E8F0 !important;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+  background: rgba(37,99,235,0.22) !important;
+  color: #60A5FA !important;
+  font-weight: 700 !important;
+  border-left: 3px solid #2563EB !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -521,6 +545,8 @@ if "reg_result" not in st.session_state:
     st.session_state.reg_result = None
 if "cls_result" not in st.session_state:
     st.session_state.cls_result = None
+if "page" not in st.session_state:
+    st.session_state.page = "Chat Assistant"
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 def fmt_currency(v):
@@ -602,6 +628,16 @@ def plotly_dark_theme():
     )
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
+_NAV_PAGES = [
+    ("💬", "Chat Assistant"),
+    ("🏢", "Property Explorer"),
+    ("📰", "Press Releases"),
+    ("📊", "SEC Filings"),
+    ("🤖", "ML Predictions"),
+    ("📈", "Portfolio Dashboard"),
+    ("☁️", "Cloud Services"),
+]
+
 with st.sidebar:
     st.markdown("""
     <div style="text-align:center;padding:20px 0 12px 0">
@@ -615,13 +651,19 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     st.divider()
+    st.markdown('<div style="font-size:0.72em;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;padding-left:4px;">Navigation</div>', unsafe_allow_html=True)
 
-    page = st.radio(
-        "Navigation",
-        ["💬  Chat Assistant", "🏢  Property Explorer", "📰  Press Releases",
-         "📊  SEC Filings", "🤖  ML Predictions", "📈  Portfolio Dashboard"],
-        label_visibility="collapsed",
-    )
+    for _icon, _name in _NAV_PAGES:
+        _active = st.session_state.page == _name
+        if st.button(
+            f"{_icon}  {_name}",
+            key=f"nav_{_name}",
+            use_container_width=True,
+            type="primary" if _active else "secondary",
+        ):
+            if not _active:
+                st.session_state.page = _name
+                st.rerun()
 
     st.divider()
     st.markdown('<div style="font-size:0.75em;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Quick Questions</div>', unsafe_allow_html=True)
@@ -633,6 +675,7 @@ with st.sidebar:
         "Predict subscription probability",
     ]:
         if st.button(q, key=f"sb_{q[:18]}", use_container_width=True):
+            st.session_state.page = "Chat Assistant"
             st.session_state._inject = q
             st.rerun()
 
@@ -645,11 +688,20 @@ with st.sidebar:
       <span style="color:#34D399">SageMaker</span>
     </div>""", unsafe_allow_html=True)
 
+# Derive page from session state (used by all page blocks below)
+page = st.session_state.page
+
+# Scroll to top whenever the page variable is read (inject once per render)
+st.markdown(
+    '<script>window.parent.document.querySelector("section.main").scrollTo(0,0);</script>',
+    unsafe_allow_html=True,
+)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  PAGE: CHAT ASSISTANT
 # ══════════════════════════════════════════════════════════════════════════════
-if "Chat" in page:
+if page == "Chat Assistant":
     st.markdown("""
     <div class="hero-banner">
       <div class="hero-title">💬 Financial Chat Assistant</div>
@@ -888,7 +940,7 @@ if "Chat" in page:
 # ══════════════════════════════════════════════════════════════════════════════
 #  PAGE: PROPERTY EXPLORER
 # ══════════════════════════════════════════════════════════════════════════════
-elif "Property" in page:
+elif page == "Property Explorer":
     st.markdown("""
     <div class="hero-banner">
       <div class="hero-title">🏢 Property Explorer</div>
@@ -996,7 +1048,7 @@ elif "Property" in page:
 # ══════════════════════════════════════════════════════════════════════════════
 #  PAGE: PRESS RELEASES
 # ══════════════════════════════════════════════════════════════════════════════
-elif "Press" in page:
+elif page == "Press Releases":
     st.markdown("""
     <div class="hero-banner">
       <div class="hero-title">📰 Press Releases & News</div>
@@ -1094,7 +1146,7 @@ elif "Press" in page:
 # ══════════════════════════════════════════════════════════════════════════════
 #  PAGE: SEC FILINGS
 # ══════════════════════════════════════════════════════════════════════════════
-elif "SEC" in page:
+elif page == "SEC Filings":
     st.markdown("""
     <div class="hero-banner">
       <div class="hero-title">📊 SEC EDGAR Filings</div>
@@ -1191,7 +1243,7 @@ elif "SEC" in page:
 # ══════════════════════════════════════════════════════════════════════════════
 #  PAGE: ML PREDICTIONS
 # ══════════════════════════════════════════════════════════════════════════════
-elif "ML" in page:
+elif page == "ML Predictions":
     st.markdown("""
     <div class="hero-banner">
       <div class="hero-title">🤖 Machine Learning Predictions</div>
@@ -1483,7 +1535,7 @@ elif "ML" in page:
 # ══════════════════════════════════════════════════════════════════════════════
 #  PAGE: PORTFOLIO DASHBOARD
 # ══════════════════════════════════════════════════════════════════════════════
-elif "Portfolio" in page:
+elif page == "Portfolio Dashboard":
     st.markdown("""
     <div class="hero-banner">
       <div class="hero-title">📈 Portfolio Dashboard</div>
@@ -1582,3 +1634,87 @@ elif "Portfolio" in page:
 
     except Exception as e:
         db_error_card(e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PAGE: CLOUD SERVICES
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "Cloud Services":
+    st.markdown("""
+    <div class="hero-banner">
+      <div class="hero-title">☁️ Cloud Services</div>
+      <div class="hero-sub">Amazon SageMaker · AWS Bedrock · Google Vertex AI — deployment-ready endpoints.</div>
+      <div class="hero-badge">🔌 Cloud-ready placeholders</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(
+        '<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);'
+        'border-radius:10px;padding:12px 18px;margin-bottom:20px;font-size:0.85em;color:#94A3B8;">'
+        '<span style="color:#F59E0B;font-weight:700;">Demo note:</span> '
+        'Cloud endpoints are configured via environment variables. '
+        'Set <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, '
+        '<code>GOOGLE_CLOUD_PROJECT</code>, and endpoint names in your <code>.env</code> to activate them.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    cloud_cards = [
+        ("🌲", "SageMaker — Regression",      "#2563EB", "Random Forest housing-price regressor",   "REGRESSION_ENDPOINT_NAME",     "housing-rf-regressor"),
+        ("💳", "SageMaker — Classification",  "#8B5CF6", "Logistic Regression bank-marketing model","CLASSIFICATION_ENDPOINT_NAME", "bank-marketing-classifier"),
+        ("🤖", "AWS Bedrock (Claude)",         "#F59E0B", "LLM fallback for chat summarization",     "BEDROCK_MODEL_ID",             "anthropic.claude-3-sonnet-20240229-v1:0"),
+        ("🔷", "Vertex AI (Gemini)",           "#06B6D4", "Primary LLM for chat Q&A via ADK",       "GOOGLE_CLOUD_PROJECT",         "your-gcp-project-id"),
+    ]
+
+    grid_html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:28px;">'
+    for icon, title, color, desc, env_var, placeholder in cloud_cards:
+        grid_html += (
+            f'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px;">'
+            f'<div style="font-size:1.6em;margin-bottom:8px;">{icon}</div>'
+            f'<div style="font-size:0.92em;font-weight:700;color:#E2E8F0;margin-bottom:4px;">{title}</div>'
+            f'<div style="font-size:0.78em;color:#64748B;margin-bottom:12px;">{desc}</div>'
+            f'<div style="font-size:0.72em;color:#475569;font-family:monospace;">'
+            f'ENV: <span style="color:{color};">{env_var}</span><br/>'
+            f'<span style="color:#334155;">default: {placeholder}</span>'
+            f'</div>'
+            f'</div>'
+        )
+    grid_html += '</div>'
+    st.markdown(grid_html, unsafe_allow_html=True)
+
+    st.markdown('<div class="section-title">Endpoint Status</div>', unsafe_allow_html=True)
+    from app.config import GCP_PROJECT, AWS_REGION, REGRESSION_ENDPOINT, CLASSIFICATION_ENDPOINT, BEDROCK_MODEL_ID
+    status_rows = [
+        ("Amazon SageMaker",  bool(os.getenv("AWS_ACCESS_KEY_ID")), f"Region: {AWS_REGION}"),
+        ("AWS Bedrock",       bool(os.getenv("AWS_ACCESS_KEY_ID")), f"Model: {BEDROCK_MODEL_ID}"),
+        ("Google Vertex AI",  bool(GCP_PROJECT),                    f"Project: {GCP_PROJECT or 'not set'}"),
+        ("Regression EP",     bool(REGRESSION_ENDPOINT),            REGRESSION_ENDPOINT),
+        ("Classification EP", bool(CLASSIFICATION_ENDPOINT),        CLASSIFICATION_ENDPOINT),
+    ]
+    for svc, active, detail in status_rows:
+        color  = "#10B981" if active else "#EF4444"
+        status = "✅ Configured" if active else "❌ Not configured"
+        st.markdown(
+            f'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;'
+            f'padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
+            f'<div style="font-size:0.88em;font-weight:600;color:#E2E8F0;">{svc}</div>'
+            f'<div style="text-align:right;">'
+            f'<div style="font-size:0.8em;color:{color};font-weight:700;">{status}</div>'
+            f'<div style="font-size:0.72em;color:#475569;margin-top:2px;">{detail}</div>'
+            f'</div></div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown('<div class="section-title" style="margin-top:24px;">How to Activate</div>', unsafe_allow_html=True)
+    st.code("""# .env file
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_secret
+AWS_DEFAULT_REGION=us-east-1
+REGRESSION_ENDPOINT_NAME=housing-rf-regressor
+CLASSIFICATION_ENDPOINT_NAME=bank-marketing-classifier
+BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+VERTEX_AGENT_ID=your-agent-id
+""", language="bash")

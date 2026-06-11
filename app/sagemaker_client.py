@@ -6,7 +6,6 @@ the regression (housing price) and classification (subscription) endpoints.
 from __future__ import annotations
 
 import json
-import boto3
 
 from app.config import AWS_REGION, REGRESSION_ENDPOINT, CLASSIFICATION_ENDPOINT
 
@@ -14,6 +13,7 @@ LABEL_MAP = {0: "No Subscription", 1: "Will Subscribe"}
 
 
 def _runtime_client():
+    import boto3
     return boto3.client("sagemaker-runtime", region_name=AWS_REGION)
 
 

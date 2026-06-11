@@ -517,6 +517,10 @@ if "use_sagemaker" not in st.session_state:
     st.session_state.use_sagemaker = False
 if "expanded_pr" not in st.session_state:
     st.session_state.expanded_pr = set()
+if "reg_result" not in st.session_state:
+    st.session_state.reg_result = None
+if "cls_result" not in st.session_state:
+    st.session_state.cls_result = None
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 def fmt_currency(v):
@@ -1279,33 +1283,41 @@ elif "ML" in page:
                 from inference.regression_inference import predict as reg_predict
                 try:
                     r = reg_predict(reg_features, use_sagemaker=st.session_state.use_sagemaker)
-                    col_res, col_map = st.columns(2)
-                    with col_res:
-                        st.markdown(f"""
-                        <div class="result-card neutral">
-                          <div class="result-card-icon">🏠</div>
-                          <div class="result-card-value">${r['predicted_value_usd']:,.0f}</div>
-                          <div class="result-card-label">Predicted Median House Value</div>
-                          <div class="result-card-sub">({r['predicted_value_100k']} × $100,000)</div>
-                          <div style="margin-top:12px;font-size:0.75em;color:#64748B;">
-                            Source: {'☁️ SageMaker' if r.get('source')=='sagemaker' else '💻 Local Model'}
-                          </div>
-                        </div>""", unsafe_allow_html=True)
-                    with col_map:
-                        fig_map = px.scatter_geo(
-                            pd.DataFrame([{"lat": latitude, "lon": longitude, "val": r["predicted_value_usd"]}]),
-                            lat="lat", lon="lon", size="val", size_max=30,
-                            scope="usa", title="Property Location",
-                            color_discrete_sequence=["#2563EB"],
-                        )
-                        fig_map.update_layout(**plotly_dark_theme(), height=260, title_font_size=12, margin=dict(l=0,r=0,t=30,b=0))
-                        st.plotly_chart(fig_map, use_container_width=True)
-                    if "fallback_reason" in r:
-                        st.warning(f"SageMaker unavailable — used local model. ({r['fallback_reason']})")
+                    st.session_state.reg_result = {"r": r, "lat": latitude, "lon": longitude}
                 except FileNotFoundError:
-                    st.error("Model not found. Run `python models/train_regression.py` first.")
+                    st.session_state.reg_result = {"error": "Model not found. Run `python models/train_regression.py` first."}
                 except Exception as e:
-                    st.error(f"Prediction error: {e}")
+                    st.session_state.reg_result = {"error": str(e)}
+
+        if st.session_state.reg_result:
+            rr = st.session_state.reg_result
+            if "error" in rr:
+                st.error(rr["error"])
+            else:
+                r = rr["r"]
+                col_res, col_map = st.columns(2)
+                with col_res:
+                    st.markdown(f"""
+                    <div class="result-card neutral">
+                      <div class="result-card-icon">🏠</div>
+                      <div class="result-card-value">${r['predicted_value_usd']:,.0f}</div>
+                      <div class="result-card-label">Predicted Median House Value</div>
+                      <div class="result-card-sub">({r['predicted_value_100k']} × $100,000)</div>
+                      <div style="margin-top:12px;font-size:0.75em;color:#64748B;">
+                        Source: {'☁️ SageMaker' if r.get('source')=='sagemaker' else '💻 Local Model'}
+                      </div>
+                    </div>""", unsafe_allow_html=True)
+                with col_map:
+                    fig_map = px.scatter_geo(
+                        pd.DataFrame([{"lat": rr["lat"], "lon": rr["lon"], "val": r["predicted_value_usd"]}]),
+                        lat="lat", lon="lon", size="val", size_max=30,
+                        scope="usa", title="Property Location",
+                        color_discrete_sequence=["#2563EB"],
+                    )
+                    fig_map.update_layout(**plotly_dark_theme(), height=260, title_font_size=12, margin=dict(l=0,r=0,t=30,b=0))
+                    st.plotly_chart(fig_map, use_container_width=True)
+                if "fallback_reason" in r:
+                    st.warning(f"SageMaker unavailable — used local model. ({r['fallback_reason']})")
 
     # ── Classification ───────────────────────────────────────────────────────
     with tab_cls:
@@ -1381,61 +1393,67 @@ elif "ML" in page:
                 from inference.classification_inference import predict as cls_predict
                 try:
                     res = cls_predict(cls_features, use_sagemaker=st.session_state.use_sagemaker)
-                    prob_yes = res["probability_yes"] * 100
-                    prob_no  = res["probability_no"]  * 100
-
-                    c_res, c_gauge = st.columns(2)
-                    with c_res:
-                        card_type = "success" if res["prediction"] == 1 else "warning"
-                        icon = "✅" if res["prediction"] == 1 else "❌"
-                        st.markdown(f"""
-                        <div class="result-card {card_type}">
-                          <div class="result-card-icon">{icon}</div>
-                          <div class="result-card-value">{res['label']}</div>
-                          <div class="result-card-label">Prediction Result</div>
-                          <div style="margin-top:14px;display:flex;gap:16px;justify-content:center;">
-                            <div style="text-align:center;">
-                              <div style="font-size:1.3em;font-weight:700;color:#10B981;">{prob_yes:.1f}%</div>
-                              <div style="font-size:0.72em;color:#94A3B8;">Will Subscribe</div>
-                            </div>
-                            <div style="text-align:center;">
-                              <div style="font-size:1.3em;font-weight:700;color:#EF4444;">{prob_no:.1f}%</div>
-                              <div style="font-size:0.72em;color:#94A3B8;">Will Not</div>
-                            </div>
-                          </div>
-                        </div>""", unsafe_allow_html=True)
-                    with c_gauge:
-                        fig_g = go.Figure(go.Indicator(
-                            mode="gauge+number",
-                            value=prob_yes,
-                            title={"text": "Subscription Probability (%)", "font": {"color": "#E2E8F0", "size": 13}},
-                            number={"font": {"color": "#E2E8F0", "size": 36}, "suffix": "%"},
-                            gauge={
-                                "axis":  {"range": [0, 100], "tickcolor": "#475569"},
-                                "bar":   {"color": "#2563EB", "thickness": 0.28},
-                                "bgcolor": "rgba(0,0,0,0)",
-                                "bordercolor": "rgba(99,130,191,0.18)",
-                                "steps": [
-                                    {"range": [0, 33],  "color": "rgba(239,68,68,0.2)"},
-                                    {"range": [33, 66], "color": "rgba(245,158,11,0.2)"},
-                                    {"range": [66, 100],"color": "rgba(16,185,129,0.2)"},
-                                ],
-                            },
-                        ))
-                        fig_g.update_layout(
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font_color="#E2E8F0", height=260,
-                            margin=dict(l=20, r=20, t=50, b=10),
-                        )
-                        st.plotly_chart(fig_g, use_container_width=True)
-
-                    if "fallback_reason" in res:
-                        st.warning(f"SageMaker unavailable — used local model.")
+                    st.session_state.cls_result = {"res": res}
                 except FileNotFoundError:
-                    st.error("Model not found. Run `python models/train_classification.py` first.")
+                    st.session_state.cls_result = {"error": "Model not found. Run `python models/train_classification.py` first."}
                 except Exception as e:
-                    st.error(f"Prediction error: {e}")
+                    st.session_state.cls_result = {"error": str(e)}
+
+        if st.session_state.cls_result:
+            cr = st.session_state.cls_result
+            if "error" in cr:
+                st.error(cr["error"])
+            else:
+                res = cr["res"]
+                prob_yes = res["probability_yes"] * 100
+                prob_no  = res["probability_no"]  * 100
+                c_res, c_gauge = st.columns(2)
+                with c_res:
+                    card_type = "success" if res["prediction"] == 1 else "warning"
+                    icon = "✅" if res["prediction"] == 1 else "❌"
+                    st.markdown(f"""
+                    <div class="result-card {card_type}">
+                      <div class="result-card-icon">{icon}</div>
+                      <div class="result-card-value">{res['label']}</div>
+                      <div class="result-card-label">Prediction Result</div>
+                      <div style="margin-top:14px;display:flex;gap:16px;justify-content:center;">
+                        <div style="text-align:center;">
+                          <div style="font-size:1.3em;font-weight:700;color:#10B981;">{prob_yes:.1f}%</div>
+                          <div style="font-size:0.72em;color:#94A3B8;">Will Subscribe</div>
+                        </div>
+                        <div style="text-align:center;">
+                          <div style="font-size:1.3em;font-weight:700;color:#EF4444;">{prob_no:.1f}%</div>
+                          <div style="font-size:0.72em;color:#94A3B8;">Will Not</div>
+                        </div>
+                      </div>
+                    </div>""", unsafe_allow_html=True)
+                with c_gauge:
+                    fig_g = go.Figure(go.Indicator(
+                        mode="gauge+number",
+                        value=prob_yes,
+                        title={"text": "Subscription Probability (%)", "font": {"color": "#E2E8F0", "size": 13}},
+                        number={"font": {"color": "#E2E8F0", "size": 36}, "suffix": "%"},
+                        gauge={
+                            "axis":  {"range": [0, 100], "tickcolor": "#475569"},
+                            "bar":   {"color": "#2563EB", "thickness": 0.28},
+                            "bgcolor": "rgba(0,0,0,0)",
+                            "bordercolor": "rgba(99,130,191,0.18)",
+                            "steps": [
+                                {"range": [0, 33],  "color": "rgba(239,68,68,0.2)"},
+                                {"range": [33, 66], "color": "rgba(245,158,11,0.2)"},
+                                {"range": [66, 100],"color": "rgba(16,185,129,0.2)"},
+                            ],
+                        },
+                    ))
+                    fig_g.update_layout(
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#E2E8F0", height=260,
+                        margin=dict(l=20, r=20, t=50, b=10),
+                    )
+                    st.plotly_chart(fig_g, use_container_width=True)
+                if "fallback_reason" in res:
+                    st.warning("SageMaker unavailable — used local model.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

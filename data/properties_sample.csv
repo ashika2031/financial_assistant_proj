@@ -1,0 +1,23 @@
+property_id,address,metro_area,sq_footage,property_type
+1,"1 Logistics Blvd, Chicago, IL 60601",Chicago,450000,Industrial
+2,"2200 Distribution Dr, Dallas, TX 75201",Dallas,380000,Industrial
+3,"500 Commerce Way, Los Angeles, CA 90012",Los Angeles,620000,Industrial
+4,"88 Industrial Park Rd, Atlanta, GA 30301",Atlanta,290000,Industrial
+5,"3300 Warehouse Ave, New Jersey, NJ 07001",New York/NJ,510000,Industrial
+6,"700 Gateway Blvd, Newark, NJ 07102",New York/NJ,340000,Industrial
+7,"1400 Freight Ln, Seattle, WA 98101",Seattle,275000,Industrial
+8,"900 Supply Chain Dr, Denver, CO 80201",Denver,220000,Industrial
+9,"2100 Cargo Ct, Memphis, TN 38101",Memphis,490000,Industrial
+10,"560 Fulfillment Rd, Phoenix, AZ 85001",Phoenix,315000,Industrial
+11,"1010 Commerce Park, Houston, TX 77001",Houston,430000,Industrial
+12,"3800 Intermodal Way, Louisville, KY 40201",Louisville,560000,Industrial
+13,"250 Trade Center Blvd, Miami, FL 33101",Miami,185000,Industrial
+14,"4400 Airport Logistics Dr, Dallas, TX 75261",Dallas,395000,Industrial
+15,"1600 E-Commerce Pkwy, Columbus, OH 43201",Columbus,480000,Industrial
+16,"770 Inland Empire Dr, Riverside, CA 92501",Inland Empire,720000,Industrial
+17,"2900 Last Mile Rd, Boston, MA 02101",Boston,142000,Industrial
+18,"1100 Distribution Ctr, Kansas City, MO 64101",Kansas City,365000,Industrial
+19,"6200 Port Logistics Ave, Baltimore, MD 21201",Baltimore,310000,Industrial
+20,"3100 Cold Chain Dr, Minneapolis, MN 55401",Minneapolis,198000,Industrial
+21,"450 Data Center Rd, Ashburn, VA 20147",Washington DC,125000,Office
+22,"8800 Corporate Campus, San Jose, CA 95101",San Francisco,235000,Office

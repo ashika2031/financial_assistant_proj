@@ -26,6 +26,7 @@ from app.config import GCP_PROJECT, GCP_LOCATION, BEDROCK_MODEL_ID, AWS_REGION, 
 
 class RouteType(str, Enum):
     GREETING             = "greeting"
+    META                 = "meta"           # app-info questions (data, models, cloud)
     FINANCIALS_DB        = "financials_db"
     PROPERTIES_DB        = "properties_db"
     PRESS_RELEASES       = "press_releases"
@@ -109,27 +110,31 @@ _PATTERNS: list[tuple[list[str], RouteType]] = [
         ["acquisition", "acqui", "merger", "expand", "expansion", "partnership",
          "press release", "recent press", "announcement", "announce", "announced",
          "sustainability", "green bond", "bond offering", "agreement", "new deal",
-         "joint venture", "recently acquired", "latest news", "news release"],
+         "joint venture", "recently acquired", "latest news", "news release",
+         "summarize latest", "company news", "recent news"],
         RouteType.PRESS_RELEASES,
     ),
     (
         ["revenue", "net income", "earnings", "profit", "expense", "expenses",
          "quarterly result", "q1", "q2", "q3", "q4", "annual result",
          "fiscal year", "financial result", "income", "ebitda", "margin",
-         "last quarter", "last year", "operating income"],
+         "last quarter", "last year", "operating income",
+         "portfolio summary", "financial summary", "net margin",
+         "which metro", "metro revenue", "highest revenue"],
         RouteType.FINANCIALS_DB,
     ),
     (
         ["property", "properties", "building", "warehouse", "industrial", "office",
          "retail", "multifamily", "square", "sqft", "sq ft", "metro area",
-         "region", "portfolio location",
+         "region", "portfolio location", "property performance",
          "chicago", "dallas", "los angeles", "new york", "atlanta",
          "seattle", "denver", "memphis", "phoenix", "houston"],
         RouteType.PROPERTIES_DB,
     ),
     (
         ["10-k", "10k", "10-q", "10q", "sec", "edgar", "filing", "annual report",
-         "quarterly report", "regulatory", "gaap", "form 10"],
+         "quarterly report", "regulatory", "gaap", "form 10", "latest filing",
+         "latest sec", "show latest"],
         RouteType.SEC_EDGAR,
     ),
     (
@@ -138,16 +143,47 @@ _PATTERNS: list[tuple[list[str], RouteType]] = [
          "subscribe", "subscription", "bank marketing", "will subscribe",
          "predict whether", "predict subscription", "subscription probability",
          "classify", "classification", "predict", "prediction", "ml prediction",
-         "machine learning model", "run model"],
+         "machine learning model", "run model", "predict housing"],
         RouteType.ML_PREDICTION,
     ),
 ]
 
-# Help-intent triggers
+# ── Meta / app-info question detection ───────────────────────────────────────
+# Each entry: (list_of_trigger_phrases, meta_type_tag)
+_META_TRIGGERS: list[tuple[list[str], str]] = [
+    (["what data", "data available", "data do you have", "what information",
+      "data is available", "what datasets", "data sources"],
+     "data_available"),
+    (["is this real", "real prologis", "real data", "actual data",
+      "is it real", "demo data", "sample data"],
+     "is_real_data"),
+    (["local fallback", "fallback mode", "offline mode", "without cloud",
+      "without credentials", "no credentials"],
+     "local_fallback"),
+    (["what models", "models are used", "which models", "ml models used",
+      "what ml", "models used"],
+     "models_info"),
+    (["are models running", "running locally", "running on sagemaker",
+      "locally or on sagemaker", "local or cloud"],
+     "models_running"),
+    (["is sagemaker configured", "sagemaker configured", "sagemaker enabled",
+      "sagemaker status", "is sagemaker"],
+     "sagemaker_status"),
+    (["what cloud services", "cloud services used", "which cloud",
+      "cloud services are", "what cloud"],
+     "cloud_services"),
+    (["what is vertex", "vertex ai used", "vertex ai for", "what does vertex"],
+     "vertex_info"),
+    (["what is aws bedrock", "aws bedrock used", "bedrock used for",
+      "what does bedrock", "what is bedrock"],
+     "bedrock_info"),
+]
+
+# Help-intent triggers  (→ GENERAL with a help message)
 _HELP_PATTERNS = [
-    "what can you", "what do you", "help me", "capabilities",
+    "what can you", "what do you do", "help me", "capabilities",
     "how do i", "what should i ask", "what topics", "show me what",
-    "how can you help", "what can i ask",
+    "how can you help", "what can i ask", "what can i do",
 ]
 
 
@@ -171,6 +207,11 @@ def route(question: str) -> Route:
     # ── Help / capability questions ──
     if any(kw in q_lower for kw in _HELP_PATTERNS):
         return Route(route_type=RouteType.GENERAL, extracted_params={"help": True})
+
+    # ── Meta / app-info questions ──
+    for triggers, meta_type in _META_TRIGGERS:
+        if any(t in q_lower for t in triggers):
+            return Route(route_type=RouteType.META, extracted_params={"meta_type": meta_type})
 
     # ── Out-of-scope company ──
     other_company = _detect_other_company(q_lower)
@@ -491,9 +532,10 @@ def _rule_based_summary(question: str, context_data: dict) -> str:
 
     # ── Fallback ──
     return (
-        "I can help with Prologis financials, property performance, SEC filings, "
-        "press releases, acquisitions, and ML predictions.\n\n"
-        "Try asking: *\"What was net income in 2024?\"* "
+        "I'm not connected to that data. "
+        "This assistant is focused on Prologis financials, property performance, "
+        "SEC filings, press releases, acquisitions, and ML predictions.\n\n"
+        "Try asking: *\"What was net income in 2023?\"* "
         "or *\"Show industrial properties in Chicago.\"*"
     )
 
@@ -520,6 +562,7 @@ def get_answer(question: str, context_data: dict) -> tuple[str, str]:
 
 _SOURCE_LABELS: dict[RouteType, str] = {
     RouteType.GREETING:             "Prologis AI Assistant",
+    RouteType.META:                 "Prologis AI Assistant",
     RouteType.GENERAL:              "Prologis AI Assistant",
     RouteType.ML_PREDICTION:        "ML Predictions Page",
     RouteType.FINANCIALS_DB:        "Source: Postgres Financials",
@@ -593,6 +636,66 @@ def handle_question(question: str, use_sagemaker: bool = False) -> dict:
             "- *\"Show latest 10-K report\"*\n"
             "- *\"Predict subscription probability\"*"
         )
+
+    if r.route_type == RouteType.META:
+        sub = params.get("meta_type", "")
+        _meta_answers: dict[str, str] = {
+            "data_available": (
+                "The app includes sample property-level records, sample financial metrics, "
+                "selected SEC filing-style metrics, stored press release records, "
+                "and local/cloud-ready ML prediction endpoints."
+            ),
+            "is_real_data": (
+                "This is a Prologis-focused academic demo. It uses sample property-level data, "
+                "selected SEC-style metrics, and mock press release records for demonstration purposes. "
+                "It is not connected to live Prologis financial systems."
+            ),
+            "local_fallback": (
+                "Local fallback mode means the app runs without live cloud credentials. "
+                "It uses PostgreSQL, sample CSV data, and local scikit-learn models. "
+                "SageMaker, Vertex AI, and Bedrock can be enabled later through environment variables."
+            ),
+            "models_info": (
+                "The ML section uses a **Random Forest Regressor** for housing value prediction "
+                "(California Housing dataset) and a **Logistic Regression classifier** for "
+                "subscription prediction (Bank Marketing dataset)."
+            ),
+            "models_running": (
+                "The deployed demo currently uses **local ML fallback**. "
+                "Models run via scikit-learn on the Streamlit Cloud instance. "
+                "SageMaker endpoints can be activated by adding AWS credentials and endpoint names "
+                "through environment variables."
+            ),
+            "sagemaker_status": (
+                "The deployed demo currently uses local ML fallback. "
+                "SageMaker can be enabled by adding AWS credentials and endpoint names "
+                "(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REGRESSION_ENDPOINT_NAME`, "
+                "`CLASSIFICATION_ENDPOINT_NAME`) as environment variables."
+            ),
+            "cloud_services": (
+                "The app is designed to connect to three cloud services:\n"
+                "- ☁️ **Amazon SageMaker** — ML inference endpoints\n"
+                "- 🤖 **Google Vertex AI (Gemini)** — LLM summarization\n"
+                "- 🔵 **AWS Bedrock (Claude)** — LLM fallback\n\n"
+                "All three fall back to local mode when credentials are not configured."
+            ),
+            "vertex_info": (
+                "Vertex AI (Gemini 1.5 Pro) is used for generating natural language answers "
+                "when a user asks a question. It summarizes retrieved financial data, property results, "
+                "and press release content into a plain-English response."
+            ),
+            "bedrock_info": (
+                "AWS Bedrock (Claude 3 Sonnet) is the secondary LLM fallback for generating "
+                "natural language answers. It is used when Vertex AI credentials are not configured. "
+                "If both are unavailable, the app falls back to a rule-based summarizer."
+            ),
+        }
+        answer = _meta_answers.get(
+            sub,
+            "I can help with Prologis financials, property performance, SEC filings, "
+            "press releases, acquisitions, and ML predictions.",
+        )
+        return _no_data_response(answer)
 
     if r.route_type == RouteType.ML_PREDICTION:
         return _no_data_response(

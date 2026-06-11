@@ -765,13 +765,18 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
         for q in [
+            "What can you help me with?",
+            "What data is available?",
             "What was the net income last quarter?",
             "Show industrial properties in Chicago",
             "Any recent acquisitions?",
-            "Q4 2023 earnings results",
+            "Show latest SEC filing",
+            "What was revenue in 2024?",
+            "Show portfolio summary",
+            "Predict housing value",
             "Predict subscription probability",
         ]:
-            if st.button(q, key=f"sb_{q[:18]}", use_container_width=True):
+            if st.button(q, key=f"sb_{q[:20]}", use_container_width=True):
                 st.session_state.page = "Chat Assistant"
                 st.session_state._inject = q
                 st.rerun()
@@ -861,21 +866,67 @@ if page == "Chat Assistant":
         cards_html += "</div>"
         st.markdown(cards_html, unsafe_allow_html=True)
 
-        # Example question buttons
-        st.markdown('<div style="font-size:0.78em;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;margin:18px 0 8px 0;">Try an example question</div>', unsafe_allow_html=True)
-        ex_questions = [
-            "What was Prologis revenue in 2023?",
-            "Show industrial properties in Chicago",
-            "Any recent acquisitions?",
-            "What is the net margin?",
-            "Predict subscription probability",
+        # ── Categorised example questions ─────────────────────────────────
+        st.markdown(
+            '<div style="font-size:0.78em;color:#64748B;font-weight:600;'
+            'text-transform:uppercase;letter-spacing:0.7px;margin:18px 0 8px 0;">'
+            'Example Questions</div>',
+            unsafe_allow_html=True,
+        )
+        _EX_CATEGORIES = [
+            ("📋 Basic", [
+                "What can you do?",
+                "What data do you have?",
+                "Is this real Prologis data?",
+                "What is local fallback mode?",
+            ]),
+            ("💰 Financial", [
+                "What was net income in 2023?",
+                "What was revenue in 2023?",
+                "Show portfolio summary",
+                "What was the net margin?",
+            ]),
+            ("🏢 Property", [
+                "Show industrial properties in Chicago",
+                "Show office properties in New York",
+                "Which metro has the highest revenue?",
+                "Show property performance by metro area",
+            ]),
+            ("📊 SEC Filings", [
+                "Show latest 10-K report",
+                "Show latest 10-Q report",
+                "What did the latest filing report?",
+                "What was the latest quarterly revenue?",
+            ]),
+            ("📰 Press Releases", [
+                "Any recent acquisitions?",
+                "Were there any expansions?",
+                "Show recent press releases",
+                "Summarize latest company news",
+            ]),
+            ("🤖 ML", [
+                "Predict housing value",
+                "Predict subscription probability",
+                "What models are used?",
+                "Are models running locally or on SageMaker?",
+            ]),
+            ("☁️ Cloud", [
+                "What cloud services are used?",
+                "Is SageMaker configured?",
+                "What is Vertex AI used for?",
+                "What is AWS Bedrock used for?",
+            ]),
         ]
-        eq_cols = st.columns(len(ex_questions))
-        for col, q in zip(eq_cols, ex_questions):
-            with col:
-                if st.button(q, key=f"ex_{q[:20]}", use_container_width=True):
-                    st.session_state._inject = q
-                    st.rerun()
+        _ex_tabs = st.tabs([cat for cat, _ in _EX_CATEGORIES])
+        for _tab, (_, _questions) in zip(_ex_tabs, _EX_CATEGORIES):
+            with _tab:
+                _c1, _c2 = st.columns(2)
+                for _qi, _q in enumerate(_questions):
+                    _col = _c1 if _qi % 2 == 0 else _c2
+                    with _col:
+                        if st.button(_q, key=f"ex_{_q[:28]}", use_container_width=True):
+                            st.session_state._inject = _q
+                            st.rerun()
 
         st.markdown('<div class="section-title">How It Works</div>', unsafe_allow_html=True)
         flow_steps = [

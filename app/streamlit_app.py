@@ -863,16 +863,31 @@ if "Chat" in page:
     if submitted and user_input.strip():
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.spinner("Thinking…"):
-            from app.chatbot_router import handle_question
-            result = handle_question(user_input, use_sagemaker=st.session_state.use_sagemaker)
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": result["answer"],
-            "source": result["source"],
-            "route": result["route"],
-            "dataframe": result["dataframe"],
-            "data_source_label": result.get("data_source_label", ""),
-        })
+            try:
+                from app.chatbot_router import handle_question
+                result = handle_question(user_input, use_sagemaker=st.session_state.use_sagemaker)
+                assistant_msg = {
+                    "role": "assistant",
+                    "content": result["answer"],
+                    "source": result["source"],
+                    "route": result["route"],
+                    "dataframe": result["dataframe"],
+                    "data_source_label": result.get("data_source_label", ""),
+                }
+            except Exception as _chat_err:
+                assistant_msg = {
+                    "role": "assistant",
+                    "content": (
+                        f"⚠️ I hit an error processing your question: `{_chat_err}`\n\n"
+                        "This demo uses a rule-based fallback when cloud AI is unavailable. "
+                        "Try asking about **Prologis revenue**, **industrial properties in Chicago**, or **recent acquisitions**."
+                    ),
+                    "source": "Error handler",
+                    "route": "error",
+                    "dataframe": None,
+                    "data_source_label": "",
+                }
+        st.session_state.messages.append(assistant_msg)
         st.rerun()
 
 

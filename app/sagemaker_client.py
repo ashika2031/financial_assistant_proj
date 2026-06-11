@@ -59,6 +59,7 @@ def invoke_classification_endpoint(features: dict) -> dict:
 
 def check_endpoint_status(endpoint_name: str) -> str:
     """Return the current status of a SageMaker endpoint (InService, Creating, Failed, etc.)."""
+    import boto3
     client = boto3.client("sagemaker", region_name=AWS_REGION)
     response = client.describe_endpoint(EndpointName=endpoint_name)
     return response["EndpointStatus"]
